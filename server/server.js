@@ -1,6 +1,8 @@
 const express = require("express");
 require("dotenv").config({ path: "./server/.env" });
 const cors = require("cors");
+const ical = require("ical-generator").default;
+const { sendCalendarInvite } = require("./emailService");
 
 const app = express();
 const PORT = process.env.PORT || 8080;
@@ -8,33 +10,89 @@ const PORT = process.env.PORT || 8080;
 app.use(cors());
 app.use(express.json());
 
-// Endpoint for generating iCal files
+function parseDateAndTime(dateStr, timeStr) {
+  const [day, month, year] = (dateStr || "01-01-2025").split("-");
+  const [hour, minute] = (timeStr || "09:00").split(":");
+  return new Date(
+    parseInt(year, 10),
+    parseInt(month, 10) - 1,
+    parseInt(day, 10),
+    parseInt(hour, 10),
+    parseInt(minute, 10)
+  );
+}
+
 app.post("/generate-ical", async (req, res) => {
   try {
-    const apiKey = process.env.API_KEY;
-    const apyUrl =
-      "https://api.apyhub.com/generate/ical/file?output=invite.ics";
+    const sendEmail = req.body.sendEmail || false;
+    const summary = req.body.summary || "Neues Ereignis";
+    const description = req.body.description || "Keine Beschreibung";
+    const organizerEmail = req.body.organizer_email || "organizer@default.com";
+    const attendeesEmails =
+      req.body.attendees_emails?.length > 0
+        ? req.body.attendees_emails
+        : ["guest@default.com"];
+    const location = req.body.location || "Wien, Österreich";
+    const timeZone = req.body.time_zone || "Europe/Vienna";
+    const meetingDate = req.body.meeting_date || "01-01-2025";
+    const startTime = req.body.start_time || "09:00";
+    const endTime = req.body.end_time || "10:00";
+    const recurring = req.body.recurring || false;
 
-    const response = await fetch(apyUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "apy-token": apiKey,
-      },
-      body: JSON.stringify(req.body),
+    // Ensure the organizer name is never empty
+    const rawName = (req.body.organizer_name || "").trim();
+    const finalName = rawName.length > 0 ? rawName : "Default Organizer";
+
+    const start = parseDateAndTime(meetingDate, startTime);
+    const end = parseDateAndTime(meetingDate, endTime);
+
+    const calendar = ical({
+      name: `${organizerEmail}'s Calendar`,
+      timezone: timeZone,
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      return res.status(response.status).json({ error: errorText });
+    let repeating;
+    if (recurring) {
+      const freq = req.body.recurrence?.frequency || "WEEKLY";
+      const count = req.body.recurrence?.count || 4;
+      repeating = { freq, count };
     }
 
-    const icsBuffer = await response.arrayBuffer();
+    calendar.createEvent({
+      start,
+      end,
+      summary,
+      description,
+      location,
+      organizer: {
+        name: finalName,
+        email: organizerEmail,
+      },
+      attendees: attendeesEmails.map((email) => ({ email })),
+      repeating,
+    });
 
-    res.setHeader("Content-Type", "text/calendar");
-    res.setHeader("Content-Disposition", "attachment; filename=invite.ics");
+    const icsData = calendar.toString();
 
-    res.send(Buffer.from(icsBuffer));
+    if (sendEmail) {
+      const subject = `${organizerEmail} hat dich zu ${summary} eingeladen`;
+      const emailText =
+        req.body.emailText ||
+        "Hallo, anbei findest du deine Kalender-Einladung als Anhang.";
+
+      await sendCalendarInvite({
+        to: attendeesEmails,
+        subject,
+        text: emailText,
+        icsData,
+      });
+
+      return res.json({ message: "Email sent successfully" });
+    } else {
+      res.setHeader("Content-Type", "text/calendar; charset=utf-8");
+      res.setHeader("Content-Disposition", 'attachment; filename="invite.ics"');
+      res.send(icsData);
+    }
   } catch (error) {
     console.error("Error generating file:", error);
     res.status(500).json({ error: "Server error" });
