@@ -87,7 +87,7 @@ app.post("/generate-ical", async (req, res) => {
         icsData,
       });
 
-      return res.json({ message: "E-Mail versendet." });
+      return res.json({ message: "E-Mail gesendet." });
     } else {
       res.setHeader("Content-Type", "text/calendar; charset=utf-8");
       res.setHeader("Content-Disposition", 'attachment; filename="invite.ics"');

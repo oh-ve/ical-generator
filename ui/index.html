@@ -67,7 +67,7 @@
         />
       </div>
 
-      <!-- Teilnehmer (E-Mails) -->
+      <!-- Teilnehmer*innen -->
       <div class="mb-3">
         <label for="attendees" class="block font-medium"
           >E-Mail-Adresse Teilnehmer*in</label
@@ -94,7 +94,7 @@
         />
       </div>
 
-      <!-- Datum / Zeit -->
+      <!-- Datum / Uhrzeit -->
       <div class="flex gap-2 mb-3">
         <div class="w-1/2">
           <label for="start_date" class="block font-medium">Startdatum</label>
@@ -147,7 +147,7 @@
         />
       </div>
 
-      <!-- Wiederkehrendes Ereignis -->
+      <!-- Wiederkehrende Ereignisse -->
       <div class="mb-3 flex items-center">
         <input
           id="recurring"
@@ -160,10 +160,8 @@
         >
       </div>
 
-      <!-- Häufigkeit + Wiederholungen -->
       <template x-if="form.recurring">
         <div class="flex gap-2 mb-3">
-          <!-- Häufigkeit -->
           <div class="w-1/2">
             <label for="recurrence_frequency" class="block font-medium"
               >Häufigkeit</label
@@ -180,7 +178,6 @@
             </select>
           </div>
 
-          <!-- Wiederholungen -->
           <div class="w-1/2">
             <label for="recurrence_count" class="block font-medium"
               >Wiederholungen</label
@@ -205,7 +202,7 @@
         </div>
       </template>
 
-      <!-- Nachricht für E-Mail -->
+      <!-- E-Mail Text -->
       <div class="mb-3">
         <label for="emailText" class="block font-medium"
           >E-Mail Nachricht</label
@@ -240,7 +237,6 @@
     <script>
       function icalForm() {
         return {
-          // The data we'll send to the backend
           form: {
             summary: "",
             description: "",
@@ -255,20 +251,28 @@
             recurring: false,
             recurrence: {
               frequency: "WEEKLY",
-              count: 2, // default
+              count: 2,
             },
             emailText: "",
           },
           attendeesInput: "",
           statusMessage: "",
-          unlimited: false, // controls whether the numeric field is disabled
+          unlimited: false,
 
           async submit(sendEmail) {
-            this.statusMessage = "Verarbeite...";
+            this.statusMessage = "E-Mail wird gesendet...";
 
-            // If unlimited is checked, treat 'count' as 0 in the final payload
-            if (this.unlimited) {
-              this.form.recurrence.count = 0;
+            let startDateStr = this.form.start_date;
+            let endDateStr = this.form.end_date;
+
+            if (startDateStr) {
+              let [yyyy, mm, dd] = startDateStr.split("-");
+              startDateStr = `${dd}-${mm}-${yyyy}`;
+            }
+
+            if (endDateStr) {
+              let [yyyy, mm, dd] = endDateStr.split("-");
+              endDateStr = `${dd}-${mm}-${yyyy}`;
             }
 
             let attendeesArray = this.attendeesInput
@@ -283,9 +287,9 @@
               organizer_email: this.form.organizer_email,
               attendees_emails: attendeesArray,
               location: this.form.location,
-              start_date: this.form.start_date,
+              start_date: startDateStr,
               start_time: this.form.start_time,
-              end_date: this.form.end_date,
+              end_date: endDateStr,
               end_time: this.form.end_time,
               time_zone: this.form.time_zone,
               recurring: this.form.recurring,
@@ -297,51 +301,20 @@
             };
 
             try {
-              if (!sendEmail) {
-                const response = await fetch(
-                  "http://localhost:8080/generate-ical",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                  }
-                );
-
-                if (!response.ok) {
-                  const errorData = await response.json();
-                  this.statusMessage = `Fehler: ${
-                    errorData.error || "Server-Fehler"
-                  }`;
-                  return;
+              const response = await fetch(
+                "http://localhost:8080/generate-ical",
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(payload),
                 }
+              );
 
-                const blob = await response.blob();
-                const icsURL = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.href = icsURL;
-                link.download = "invite.ics";
-                link.click();
-                URL.revokeObjectURL(icsURL);
-
-                this.statusMessage = ".ics-Datei heruntergeladen.";
+              const data = await response.json();
+              if (response.ok) {
+                this.statusMessage = data.message || "E-Mail gesendet.";
               } else {
-                const response = await fetch(
-                  "http://localhost:8080/generate-ical",
-                  {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload),
-                  }
-                );
-
-                const data = await response.json();
-                if (response.ok) {
-                  this.statusMessage = data.message || "E-Mail gesendet.";
-                } else {
-                  this.statusMessage = `Fehler: ${
-                    data.error || "Server-Fehler"
-                  }`;
-                }
+                this.statusMessage = `Fehler: ${data.error || "Server-Fehler"}`;
               }
             } catch (err) {
               console.error(err);
