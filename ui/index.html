@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>iCal Generator</title>
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      defer
+    ></script>
+  </head>
+  <body>
+    <h1>iCal Event Creator</h1>
+
+    <div
+      x-data="{ 
+            summary: '', 
+            description: '', 
+            organizer_email: '', 
+            message: ''
+        }"
+    >
+      <label>Summary:</label>
+      <input type="text" x-model="summary" placeholder="Enter event title" />
+
+      <label>Description:</label>
+      <textarea
+        x-model="description"
+        placeholder="Enter event details"
+      ></textarea>
+
+      <label>Organizer Email:</label>
+      <input
+        type="email"
+        x-model="organizer_email"
+        placeholder="your@email.com"
+      />
+
+      <p>Live Preview:</p>
+      <p><strong>Title:</strong> <span x-text="summary"></span></p>
+      <p><strong>Description:</strong> <span x-text="description"></span></p>
+      <p><strong>Organizer:</strong> <span x-text="organizer_email"></span></p>
+    </div>
+  </body>
+</html>
