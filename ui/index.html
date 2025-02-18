@@ -1,45 +1,354 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>iCal Generator</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js (CDN) -->
     <script
       src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
       defer
     ></script>
   </head>
-  <body>
-    <h1>iCal Event Creator</h1>
-
+  <body class="bg-gray-100 min-h-screen flex items-center justify-center">
     <div
-      x-data="{ 
-            summary: '', 
-            description: '', 
-            organizer_email: '', 
-            message: ''
-        }"
+      class="my-8 bg-white p-6 rounded shadow-md w-full max-w-2xl"
+      x-data="icalForm()"
     >
-      <label>Summary:</label>
-      <input type="text" x-model="summary" placeholder="Enter event title" />
+      <h1 class="text-2xl font-bold mb-4">iCal Generator</h1>
 
-      <label>Description:</label>
-      <textarea
-        x-model="description"
-        placeholder="Enter event details"
-      ></textarea>
+      <!-- Veranstaltungstitel -->
+      <div class="mb-3">
+        <label for="summary" class="block font-medium"
+          >Veranstaltungstitel</label
+        >
+        <input
+          id="summary"
+          type="text"
+          class="border w-full p-2 rounded"
+          x-model="form.summary"
+        />
+      </div>
 
-      <label>Organizer Email:</label>
-      <input
-        type="email"
-        x-model="organizer_email"
-        placeholder="your@email.com"
-      />
+      <!-- Beschreibung -->
+      <div class="mb-3">
+        <label for="description" class="block font-medium">Beschreibung</label>
+        <textarea
+          id="description"
+          class="border w-full p-2 rounded"
+          x-model="form.description"
+        ></textarea>
+      </div>
 
-      <p>Live Preview:</p>
-      <p><strong>Title:</strong> <span x-text="summary"></span></p>
-      <p><strong>Description:</strong> <span x-text="description"></span></p>
-      <p><strong>Organizer:</strong> <span x-text="organizer_email"></span></p>
+      <!-- Veranstalter*in -->
+      <div class="mb-3">
+        <label for="organizer_name" class="block font-medium"
+          >Veranstalter*in</label
+        >
+        <input
+          id="organizer_name"
+          type="text"
+          class="border w-full p-2 rounded"
+          x-model="form.organizer_name"
+        />
+      </div>
+
+      <!-- E-Mail-Adresse Veranstalter*in -->
+      <div class="mb-3">
+        <label for="organizer_email" class="block font-medium"
+          >E-Mail-Adresse Veranstalter*in</label
+        >
+        <input
+          id="organizer_email"
+          type="email"
+          class="border w-full p-2 rounded"
+          x-model="form.organizer_email"
+        />
+      </div>
+
+      <!-- Teilnehmer (E-Mails) -->
+      <div class="mb-3">
+        <label for="attendees" class="block font-medium"
+          >E-Mail-Adresse Teilnehmer*in</label
+        >
+        <input
+          id="attendees"
+          type="text"
+          class="border w-full p-2 rounded"
+          x-model="attendeesInput"
+        />
+        <p id="attendees-help" class="text-sm text-gray-600">
+          Mehrere E-Mail-Adressen mit Komma trennen.
+        </p>
+      </div>
+
+      <!-- Ort -->
+      <div class="mb-3">
+        <label for="location" class="block font-medium">Ort</label>
+        <input
+          id="location"
+          type="text"
+          class="border w-full p-2 rounded"
+          x-model="form.location"
+        />
+      </div>
+
+      <!-- Datum / Zeit -->
+      <div class="flex gap-2 mb-3">
+        <div class="w-1/2">
+          <label for="start_date" class="block font-medium">Startdatum</label>
+          <input
+            id="start_date"
+            type="date"
+            class="border w-full p-2 rounded"
+            x-model="form.start_date"
+          />
+        </div>
+        <div class="w-1/2">
+          <label for="start_time" class="block font-medium">Startzeit</label>
+          <input
+            id="start_time"
+            type="time"
+            class="border w-full p-2 rounded"
+            x-model="form.start_time"
+          />
+        </div>
+      </div>
+      <div class="flex gap-2 mb-3">
+        <div class="w-1/2">
+          <label for="end_date" class="block font-medium">Enddatum</label>
+          <input
+            id="end_date"
+            type="date"
+            class="border w-full p-2 rounded"
+            x-model="form.end_date"
+          />
+        </div>
+        <div class="w-1/2">
+          <label for="end_time" class="block font-medium">Endzeit</label>
+          <input
+            id="end_time"
+            type="time"
+            class="border w-full p-2 rounded"
+            x-model="form.end_time"
+          />
+        </div>
+      </div>
+
+      <!-- Zeitzone -->
+      <div class="mb-3">
+        <label for="time_zone" class="block font-medium">Zeitzone</label>
+        <input
+          id="time_zone"
+          type="text"
+          class="border w-full p-2 rounded"
+          x-model="form.time_zone"
+        />
+      </div>
+
+      <!-- Wiederkehrendes Ereignis -->
+      <div class="mb-3 flex items-center">
+        <input
+          id="recurring"
+          type="checkbox"
+          class="mr-2"
+          x-model="form.recurring"
+        />
+        <label for="recurring" class="block font-medium"
+          >Wiederkehrendes Ereignis</label
+        >
+      </div>
+
+      <!-- Häufigkeit + Wiederholungen -->
+      <template x-if="form.recurring">
+        <div class="flex gap-2 mb-3">
+          <!-- Häufigkeit -->
+          <div class="w-1/2">
+            <label for="recurrence_frequency" class="block font-medium"
+              >Häufigkeit</label
+            >
+            <select
+              id="recurrence_frequency"
+              class="border w-full p-2 rounded"
+              x-model="form.recurrence.frequency"
+            >
+              <option value="DAILY">Täglich</option>
+              <option value="WEEKLY">Wöchentlich</option>
+              <option value="MONTHLY">Monatlich</option>
+              <option value="YEARLY">Jährlich</option>
+            </select>
+          </div>
+
+          <!-- Wiederholungen -->
+          <div class="w-1/2">
+            <label for="recurrence_count" class="block font-medium"
+              >Wiederholungen</label
+            >
+            <div class="flex items-center gap-2">
+              <input
+                id="recurrence_count"
+                type="number"
+                min="1"
+                :disabled="unlimited"
+                :class="unlimited
+                  ? 'border p-2 rounded bg-gray-300 text-gray-700 cursor-not-allowed opacity-80'
+                  : 'border p-2 rounded bg-white text-gray-900'"
+                x-model="form.recurrence.count"
+              />
+              <div class="flex items-center gap-1">
+                <input id="unlimited" type="checkbox" x-model="unlimited" />
+                <label for="unlimited" class="text-sm">Unbegrenzt</label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- Nachricht für E-Mail -->
+      <div class="mb-3">
+        <label for="emailText" class="block font-medium"
+          >E-Mail Nachricht</label
+        >
+        <textarea
+          id="emailText"
+          class="border w-full p-2 rounded"
+          x-model="form.emailText"
+        ></textarea>
+      </div>
+
+      <!-- Aktionen -->
+      <div class="flex gap-4 mt-4">
+        <button
+          class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+          @click="submit(false)"
+        >
+          .ics herunterladen
+        </button>
+        <button
+          class="bg-green-600 text-white py-2 px-4 rounded hover:bg-green-700"
+          @click="submit(true)"
+        >
+          E-Mail senden
+        </button>
+      </div>
+
+      <!-- Statusmeldung -->
+      <div class="mt-4 text-sm text-gray-700" x-text="statusMessage"></div>
     </div>
+
+    <script>
+      function icalForm() {
+        return {
+          // The data we'll send to the backend
+          form: {
+            summary: "",
+            description: "",
+            organizer_name: "",
+            organizer_email: "",
+            location: "",
+            start_date: "",
+            start_time: "",
+            end_date: "",
+            end_time: "",
+            time_zone: "Europe/Vienna",
+            recurring: false,
+            recurrence: {
+              frequency: "WEEKLY",
+              count: 2, // default
+            },
+            emailText: "",
+          },
+          attendeesInput: "",
+          statusMessage: "",
+          unlimited: false, // controls whether the numeric field is disabled
+
+          async submit(sendEmail) {
+            this.statusMessage = "Verarbeite...";
+
+            // If unlimited is checked, treat 'count' as 0 in the final payload
+            if (this.unlimited) {
+              this.form.recurrence.count = 0;
+            }
+
+            let attendeesArray = this.attendeesInput
+              .split(",")
+              .map((a) => a.trim())
+              .filter((a) => a !== "");
+
+            const payload = {
+              summary: this.form.summary,
+              description: this.form.description,
+              organizer_name: this.form.organizer_name,
+              organizer_email: this.form.organizer_email,
+              attendees_emails: attendeesArray,
+              location: this.form.location,
+              start_date: this.form.start_date,
+              start_time: this.form.start_time,
+              end_date: this.form.end_date,
+              end_time: this.form.end_time,
+              time_zone: this.form.time_zone,
+              recurring: this.form.recurring,
+              recurrence: this.form.recurring
+                ? this.form.recurrence
+                : undefined,
+              emailText: this.form.emailText,
+              sendEmail: sendEmail,
+            };
+
+            try {
+              if (!sendEmail) {
+                const response = await fetch(
+                  "http://localhost:8080/generate-ical",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  }
+                );
+
+                if (!response.ok) {
+                  const errorData = await response.json();
+                  this.statusMessage = `Fehler: ${
+                    errorData.error || "Server-Fehler"
+                  }`;
+                  return;
+                }
+
+                const blob = await response.blob();
+                const icsURL = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.href = icsURL;
+                link.download = "invite.ics";
+                link.click();
+                URL.revokeObjectURL(icsURL);
+
+                this.statusMessage = ".ics-Datei heruntergeladen.";
+              } else {
+                const response = await fetch(
+                  "http://localhost:8080/generate-ical",
+                  {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                  }
+                );
+
+                const data = await response.json();
+                if (response.ok) {
+                  this.statusMessage = data.message || "E-Mail gesendet.";
+                } else {
+                  this.statusMessage = `Fehler: ${
+                    data.error || "Server-Fehler"
+                  }`;
+                }
+              }
+            } catch (err) {
+              console.error(err);
+            }
+          },
+        };
+      }
+    </script>
   </body>
 </html>
