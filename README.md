@@ -46,7 +46,13 @@ Alpine.js und Tailwind CSS sind als CDNs eingebunden:
 <script src="https://cdn.tailwindcss.com"></script>
 ```
 
-### E-Mail-Versand testen
+## Server starten
+
+```bash
+npm run dev
+```
+
+## E-Mail-Versand testen
 
 ```bash
 node scripts/testMail.js
