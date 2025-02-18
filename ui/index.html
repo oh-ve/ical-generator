@@ -214,7 +214,7 @@
         ></textarea>
       </div>
 
-      <!-- Aktionen -->
+      <!-- Buttons -->
       <div class="flex gap-4 mt-4">
         <button
           class="bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
@@ -227,6 +227,12 @@
           @click="submit(true)"
         >
           E-Mail senden
+        </button>
+        <button
+          class="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+          @click="resetForm()"
+        >
+          Zurücksetzen
         </button>
       </div>
 
@@ -319,6 +325,28 @@
             } catch (err) {
               console.error(err);
             }
+          },
+          resetForm() {
+            this.form = {
+              summary: "",
+              description: "",
+              organizer_name: "",
+              organizer_email: "",
+              location: "",
+              start_date: "",
+              start_time: "",
+              end_date: "",
+              end_time: "",
+              recurring: false,
+              recurrence: {
+                frequency: "WEEKLY",
+                count: 2,
+              },
+              emailText: "",
+            };
+            this.attendeesInput = "";
+            this.unlimited = false;
+            this.statusMessage = "";
           },
         };
       }

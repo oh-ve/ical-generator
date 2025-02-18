@@ -75,7 +75,7 @@ app.post("/generate-ical", async (req, res) => {
     const icsData = calendar.toString();
 
     if (sendEmail) {
-      const subject = `${organizerEmail} hat dich zu ${summary} eingeladen`;
+      const subject = `${name} hat dich zu ${summary} eingeladen`;
       const emailText =
         req.body.emailText ||
         "Hallo, anbei findest du deine Kalender-Einladung als Anhang.";
