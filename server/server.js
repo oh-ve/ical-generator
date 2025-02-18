@@ -34,17 +34,17 @@ app.post("/generate-ical", async (req, res) => {
         : ["guest@default.com"];
     const location = req.body.location || "Wien, Österreich";
     const timeZone = req.body.time_zone || "Europe/Vienna";
-    const meetingDate = req.body.meeting_date || "01-01-2025";
+    const startDate = req.body.start_date || "01-01-2025";
+    const endDate = req.body.end_date || startDate;
     const startTime = req.body.start_time || "09:00";
     const endTime = req.body.end_time || "10:00";
     const recurring = req.body.recurring || false;
 
-    // Ensure the organizer name is never empty
     const rawName = (req.body.organizer_name || "").trim();
-    const finalName = rawName.length > 0 ? rawName : "Default Organizer";
+    const name = rawName.length > 0 ? rawName : "Default Organizer";
 
-    const start = parseDateAndTime(meetingDate, startTime);
-    const end = parseDateAndTime(meetingDate, endTime);
+    const start = parseDateAndTime(startDate, startTime);
+    const end = parseDateAndTime(endDate, endTime);
 
     const calendar = ical({
       name: `${organizerEmail}'s Calendar`,
@@ -65,7 +65,7 @@ app.post("/generate-ical", async (req, res) => {
       description,
       location,
       organizer: {
-        name: finalName,
+        name: name,
         email: organizerEmail,
       },
       attendees: attendeesEmails.map((email) => ({ email })),
